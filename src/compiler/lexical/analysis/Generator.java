@@ -23,7 +23,7 @@ public class Generator {
 
         //parse input
 
-
+        System.out.println("Vladoooo");
 
         //END
         SaveAutomatons();
@@ -33,5 +33,6 @@ public class Generator {
         ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream(new File(outputPath).getAbsolutePath()));
         output.writeObject(automatonsList);
         output.close();
+
     }
 }
