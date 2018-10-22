@@ -15,7 +15,7 @@ public class LexManager implements Serializable {
         this.startState = startState;
         this.tempState = startState;
         this.row = 1;
-        this.head = 0;
+        this.head = -1;
 
     }
 
@@ -80,8 +80,8 @@ public class LexManager implements Serializable {
 
     //special actions
 
-    public void moveHead(int value) {
-        this.head += value;
+    public void setHead(int value) {
+        this.head = value;
     }
 
     private void nextRow(){
@@ -89,7 +89,7 @@ public class LexManager implements Serializable {
     }
 
     private void returnHeadOn(int index){
-        //bumo videli
+        this.head = index;
     }
 
 }
