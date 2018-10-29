@@ -110,8 +110,8 @@ public class Generator {
 
             for (int i = 0; i < options.size(); i++) {
                 PairOfStates result = implementAutomatonFromRegex(options.get(i), automaton);
-                automaton.addTransition(leftState, result.leftState, '$');
-                automaton.addTransition(result.rightState, rightState, '$');
+                automaton.addTransition(leftState, result.leftState, (char)0);
+                automaton.addTransition(result.rightState, rightState, (char)0);
             }
 
         }else{
@@ -187,19 +187,19 @@ public class Generator {
 
                     a = automaton.createNewState();
                     b = automaton.createNewState();
-                    automaton.addTransition(a, x,'$');
-                    automaton.addTransition(y, b,'$');
-                    automaton.addTransition(a, b,'$');
-                    automaton.addTransition(y, x,'$');
+                    automaton.addTransition(a, x,(char)0);
+                    automaton.addTransition(y, b,(char)0);
+                    automaton.addTransition(a, b,(char)0);
+                    automaton.addTransition(y, x,(char)0);
                     i++;
                 }
 
                 //connect with automaton
-                automaton.addTransition(lastState, a, '$');
+                automaton.addTransition(lastState, a, (char)0);
                 lastState = b;
             }
 
-            automaton.addTransition(lastState, rightState, '$');
+            automaton.addTransition(lastState, rightState, (char)0);
         }
 
         return new PairOfStates(leftState, rightState);

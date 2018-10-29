@@ -39,7 +39,7 @@ public class Analyzer {
 
             char tempChar;
             if (i == inputCode.length()){
-                tempChar = '$';
+                tempChar = (char)0;
                 EOF = true;
 
             }else{

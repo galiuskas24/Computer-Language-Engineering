@@ -53,7 +53,7 @@ public class Automaton implements Serializable {
 
             //generate epsEnvironment of state
             ArrayList<Integer> tempEpsEnv = (ArrayList<Integer>) transitions.stream()
-                            .filter(o -> o.from == fromStack && o.forChar == '$')
+                            .filter(o -> o.from == fromStack && o.forChar == (char)0)
                             .map(Transition::getTo)
                             .collect(Collectors.toList());
 

@@ -22,11 +22,7 @@ public class LexManager implements Serializable {
     public void executeActions(String action, String lexUnit){
         String[] actions = action.split("\n");
 
-        //first row - lex name
-        if (!actions[0].equals("-")){
-            System.out.println(actions[0] + " " + row + " " + lexUnit);
-        }
-
+        int endIndex = lexUnit.length();
         //actions
         for (int i = 1; i< actions.length; i++) {
 
@@ -40,6 +36,7 @@ public class LexManager implements Serializable {
             } else if ((actions[i].startsWith("VRATI_SE"))){
                 String[] parts = actions[i].split(" ");
                 returnHeadOn(Integer.parseInt(parts[1]));
+                endIndex = Integer.parseInt(parts[1]);
 
             } else {
             System.err.println("Action not defined!");
@@ -47,6 +44,13 @@ public class LexManager implements Serializable {
             }
 
         }
+
+
+        //first row - lex name
+        if (!actions[0].equals("-")){
+            System.out.println(actions[0] + " " + row + " " + lexUnit.substring(0, endIndex));
+        }
+
     }
 
 
