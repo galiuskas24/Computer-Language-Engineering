@@ -4,16 +4,16 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 
 public class Generator {
 
     private static String outputPath = "src/compiler/lexical/analysis/analyzer/Automatons.obj";
-    private static ArrayList<Automaton> automatonsList = new ArrayList<>();
+    private static TreeMap<Integer, Automaton> automatonsMap = new TreeMap<>();
     private static String startState;
 
     public static void main(String[] args) throws Exception {
-
 
         //read input data
         ArrayList<String> inputData = new ArrayList<>();
@@ -27,13 +27,13 @@ public class Generator {
         parseInput(inputData);
 
         //END
-        SaveDataForAnalyzer(new LexManager(startState, automatonsList));
+        SaveDataForAnalyzer(new LexManager(startState, automatonsMap));
     }
 
     private static void parseInput(ArrayList<String> inputData) {
         HashMap<String, String> regexMap = new HashMap<>();
         boolean readAutomatons = false;
-
+        int priority = 1;
         for (int i = 0; i < inputData.size(); i++) {
             String line = inputData.get(i);
 
@@ -54,7 +54,7 @@ public class Generator {
 
                     //find and set actions
                     automaton.setActions(parseActions(inputData, i + 1));
-                    automatonsList.add(automaton);
+                    automatonsMap.put(priority++, automaton);
                 }
                 continue;
             }
@@ -207,9 +207,7 @@ public class Generator {
 
     private static boolean isOperator(String regex, int i) {
         int cnt = 0;
-
         for (int j = i - 1; j >= 0 && regex.charAt(j) == '\\'; j--) cnt++;
-
         return cnt % 2 == 0;
     }
 
@@ -255,8 +253,8 @@ public class Generator {
     }
 
     static class PairOfStates{
-        public int leftState;
-        public int rightState;
+        private int leftState;
+        private int rightState;
 
         public PairOfStates(int leftState, int rightState) {
             this.leftState = leftState;

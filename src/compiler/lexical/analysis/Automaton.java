@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("serial")
 public class Automaton implements Serializable {
     private int startState;
     private int finishState;
@@ -20,22 +21,16 @@ public class Automaton implements Serializable {
         tempStates = new ArrayList<>();
     }
 
-    public Automaton(Automaton automaton){
-        this.startState = automaton.getStartState();
-        this.finishState = automaton.getFinishState();
-        this.numOfStates = automaton.getNumOfStates();
-        this.mainState = automaton.getMainState();
-        this.actions = automaton.getActions();
-        this.transitions = automaton.getTransitions();
-        this.tempStates = automaton.getTempStates();
-    }
-
     public int createNewState(){
         return numOfStates++;
     }
 
     public void addTransition(int from, int to, Character forChar){
         transitions.add(new Transition(from, to, forChar));
+    }
+
+    public boolean isSatisfied(){
+        return tempStates.contains(finishState);
     }
 
     public void restartAutomaton(){
@@ -69,17 +64,24 @@ public class Automaton implements Serializable {
         tempStates = newStates;
     }
 
-    public boolean doTransitionForChar(char charachter){
+    public boolean doTransitionForChar(char character){
         ArrayList<Integer> newStates = new ArrayList<>();
 
+        //find new states for transition with parameter character
         for (Integer state: tempStates) {
 
             ArrayList<Integer> tempEpsEnv = (ArrayList<Integer>) transitions.stream()
-                    .filter(o -> o.from == state && o.forChar == charachter)
+                    .filter(o -> o.from == state && o.forChar == character)
                     .map(Transition::getTo)
                     .collect(Collectors.toList());
 
             newStates.addAll(tempEpsEnv);
+        }
+
+        // If no more transitions but automaton is satisfied
+        if (this.isSatisfied() && newStates.size() == 0){
+            tempStates.add(finishState);
+            return false; // no new states
         }
 
         tempStates = newStates;
@@ -96,24 +98,8 @@ public class Automaton implements Serializable {
         this.mainState = mainState;
     }
 
-    public ArrayList<Integer> getTempStates() {
-        return tempStates;
-    }
-
     public void addTempState(int tempState) {
         tempStates.add(tempState);
-    }
-
-    public boolean isSatisfied(){
-        return tempStates.contains(finishState);
-    }
-
-    public int getStartState() {
-        return startState;
-    }
-
-    public int getFinishState() {
-        return finishState;
     }
 
     public void setFinishState(int finishState) {
@@ -124,22 +110,6 @@ public class Automaton implements Serializable {
         this.startState = startState;
     }
 
-    public int getNumOfStates() {
-        return numOfStates;
-    }
-
-    public void setNumOfStates(int numOfStates) {
-        this.numOfStates = numOfStates;
-    }
-
-    public ArrayList<Transition> getTransitions() {
-        return transitions;
-    }
-
-    public void setTransitions(ArrayList<Transition> transitions) {
-        this.transitions = transitions;
-    }
-
     public String getActions() {
         return actions;
     }
@@ -148,6 +118,7 @@ public class Automaton implements Serializable {
         this.actions = actions;
     }
 
+    @SuppressWarnings("serial")
     class Transition implements Serializable{
         private int from;
         private int to;
@@ -159,28 +130,9 @@ public class Automaton implements Serializable {
             this.forChar = forChar;
         }
 
-        public int getFrom() {
-            return from;
-        }
-
-        public void setFrom(int from) {
-            this.from = from;
-        }
-
         public int getTo() {
             return to;
         }
 
-        public void setTo(int to) {
-            this.to = to;
-        }
-
-        public Character getForChar() {
-            return forChar;
-        }
-
-        public void setForChar(Character forChar) {
-            this.forChar = forChar;
-        }
     }
 }

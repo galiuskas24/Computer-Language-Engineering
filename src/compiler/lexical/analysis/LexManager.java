@@ -1,16 +1,17 @@
 package compiler.lexical.analysis;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.TreeMap;
 
 public class LexManager implements Serializable {
-    private ArrayList<Automaton> automatonList;
+    private TreeMap<Integer, Automaton> automatonList;
     private int row;
     private int head;
     private String tempState;
     private String startState;
 
-    public LexManager(String startState, ArrayList<Automaton> automatonList) {
+    @SuppressWarnings("serial")
+    public LexManager(String startState, TreeMap<Integer, Automaton> automatonList) {
         this.automatonList = automatonList;
         this.startState = startState;
         this.tempState = startState;
@@ -66,7 +67,7 @@ public class LexManager implements Serializable {
         this.tempState = startState;
     }
 
-    public ArrayList<Automaton> getAutomatonList() {
+    public TreeMap<Integer, Automaton> getAutomatons() {
         return automatonList;
     }
 
