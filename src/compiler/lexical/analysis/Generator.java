@@ -155,7 +155,7 @@ public class Generator {
                         b = automaton.createNewState();
 
                         if (regex.charAt(i) == '$'){
-                            automaton.addTransition(a, b, '$');
+                            automaton.addTransition(a, b, (char)0);
                         }else {
                             automaton.addTransition(a, b, regex.charAt(i));
                         }
