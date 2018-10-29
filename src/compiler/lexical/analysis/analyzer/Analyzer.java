@@ -14,6 +14,7 @@ public class Analyzer {
     private static LexManager manager;
 
     public static void main(String[] args) throws Exception {
+
         LoadDataForAnalyzer();
         automatonsList = manager.getAutomatonList();
 
@@ -29,6 +30,7 @@ public class Analyzer {
         startIndex = lastIndex = finishIndex = 0;
         boolean EOF = false;
         String lexUnit = "";
+        boolean errorOccurred = false;
         ArrayList<Automaton> automatons = cloneList(automatonsList);
 
         for (int i = 0; i <= inputCode.length(); i++){
@@ -58,9 +60,22 @@ public class Analyzer {
                 if(lexUnit.length() > 1){
                     lexUnit = lexUnit.substring(0, lexUnit.length() - 1);
                 }
-                findSuccessfulAutomaton(oldListOfAutomatons, lexUnit);
+                if (manager.getRow() == 27){
+                    System.out.print("");
+                }
+                if(!findSuccessfulAutomaton(oldListOfAutomatons, lexUnit)){
+                    //handling error
+                    System.err.println("Error: " + lexUnit.substring(0,1));
+                    errorOccurred = true;
+                }
                 lexUnit = "";
                 automatons = cloneList(automatonsList);//restart every automaton
+
+                if (errorOccurred){
+                    errorOccurred = false;
+                    i = startIndex = startIndex + 1;
+                    continue;
+                }
 
                 int head = manager.getHead();
                 if (head != -1){
@@ -71,7 +86,7 @@ public class Analyzer {
                 }
 
                 if(!EOF){
-                    i = startIndex = finishIndex = lastIndex;
+                    i = startIndex = lastIndex;
                 }
 
 
@@ -87,14 +102,15 @@ public class Analyzer {
         return clone;
     }
 
-    private static void findSuccessfulAutomaton(ArrayList<Automaton> oldListOfAutomatons, String lexUnit) {
+    private static boolean findSuccessfulAutomaton(ArrayList<Automaton> listOfAutomatons, String lexUnit) {
 
-        for (Automaton aut: oldListOfAutomatons) {
+        for (Automaton aut: listOfAutomatons) {
             if (aut.isSatisfied()){
                 manager.executeActions(aut.getActions(), lexUnit);
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     private static void LoadDataForAnalyzer() throws Exception{
