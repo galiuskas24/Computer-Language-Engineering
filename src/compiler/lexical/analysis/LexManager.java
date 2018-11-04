@@ -3,6 +3,7 @@ package compiler.lexical.analysis;
 import java.io.Serializable;
 import java.util.TreeMap;
 
+@SuppressWarnings("serial")
 public class LexManager implements Serializable {
     private TreeMap<Integer, Automaton> automatonList;
     private int row;
@@ -10,7 +11,7 @@ public class LexManager implements Serializable {
     private String tempState;
     private String startState;
 
-    @SuppressWarnings("serial")
+
     public LexManager(String startState, TreeMap<Integer, Automaton> automatonList) {
         this.automatonList = automatonList;
         this.startState = startState;
