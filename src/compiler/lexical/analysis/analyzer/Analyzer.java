@@ -79,7 +79,7 @@ public class Analyzer {
                     errorOccurred = true;
                 }
 
-                //restart automatons
+                //restart automatons and history
                 automatons.forEach((index, automaton) -> {
                     automaton.restartAutomaton();
                     automaton.generateEpsEnv();
