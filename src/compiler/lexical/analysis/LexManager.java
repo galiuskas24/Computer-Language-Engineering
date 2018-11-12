@@ -47,14 +47,13 @@ public class LexManager implements Serializable {
 
         }
 
-
         //first row - lex name
         if (!actions[0].equals("-")){
-            System.out.println(actions[0] + " " + row + " " + lexUnit.substring(0, endIndex));
+            if (lexUnit.length() > 1 ) lexUnit = lexUnit.substring(0, endIndex);
+            System.out.println(actions[0] + " " + row + " " + lexUnit);
         }
 
     }
-
 
     public String getTempState() {
         return tempState;
