@@ -16,7 +16,8 @@ public class SemantickiAnalizator {
 
 
     public static void main(String[] args) throws FileNotFoundException {
-        String path = "/home/vlado24/Downloads/PPJ_MultiSPRUT_2/Primjeri radnih direktorija/Sema/Testovi/7/7.in";
+        int type = 5;
+        String path = "/home/vlado24/Downloads/PPJ_MultiSPRUT_2/Primjeri radnih direktorija/Sema/Testovi/" + type + "/" + type +".proba";
         sc = new Scanner(new File(path));
 
         Context globalContext = new Context();
@@ -377,7 +378,7 @@ public class SemantickiAnalizator {
         while (sc.hasNextLine()){
             String newLine = sc.nextLine();
             String nodeLine = newLine.replaceAll("^\\s+", "");
-            if ((newLine.length()-nodeLine.length()) > spacePrefix){
+            if ((newLine.length()-nodeLine.length()) <= spacePrefix){
                 bufferRow.add(nodeLine);
                 break;
             }
@@ -798,7 +799,7 @@ public class SemantickiAnalizator {
 
             if (!isImplicitCastable(retPar2.type, retPar.type)){
                 System.out.println("<izraz_pridruzivanja> ::= <postfiks_izraz> " + endWord + " <izraz_pridruzivanja>");
-                System.err.println("Error: Različiti tipovi pridruživanja!" + retPar2.type + "->" + retPar.type);
+                System.err.println("Error: Razliciti tipovi pridruzivanja!" + retPar2.type + "->" + retPar.type);
                 System.exit(-1);
             }
 
@@ -835,7 +836,7 @@ public class SemantickiAnalizator {
     private static ReturnParameters slozena_naredba(ReturnParameters parameters, String returnType) {
         ReturnParameters params = new ReturnParameters();
 
-        //add new context TODO: možda samo za jedan treba
+        //add new context TODO: mozda samo za jedan treba
         Context cnx = new Context();
         cnx.locaclVars = new ArrayList<>();
 
@@ -951,9 +952,9 @@ public class SemantickiAnalizator {
         if (firstEndWord.startsWith("KR_WHILE")){
             String thirdEndWord = load_next_node(); // D_ZAGRADA
 
-            if (isImplicitCastable(retPar.type, "int")){
+            if (!isImplicitCastable(retPar.type, "int")){
                 //error
-                String out = "<naredba_petlje> ::= "+ firstEndWord + " " + sedoncEndWord + " <izraz> "+ thirdEndWord +" <naredba>";
+                String out = "<naredba_petlje> ::= "+ firstEndWord + " " + sedoncEndWord + " <izraz> "+ createErrorEndWord(thirdEndWord) +" <naredba>";
                 System.out.println(out);
                 System.err.println("Expected int type!");
                 System.exit(-1);
@@ -974,9 +975,8 @@ public class SemantickiAnalizator {
                     System.exit(-1);
 
                 }else if (desNode.startsWith("<izraz>")){
-                    //TODO: ako je error u izraz -> onda nije dobar ispis
-                    check_node(desNode);
-                    String lastEndWord = createErrorEndWord(desNode);
+                    errorLoadNode();
+                    String lastEndWord = createErrorEndWord(load_next_node()); //D_ZAGRADA
                     String out = "<naredba_petlje> ::= "+ firstEndWord + " " + sedoncEndWord +
                             " <izraz_naredba> <izraz_naredba> <izraz> "+ lastEndWord +" <naredba>";
                     System.out.println(out);
@@ -989,10 +989,10 @@ public class SemantickiAnalizator {
                 check_node(load_next_node());
 
             }else if (desNode.startsWith("<izraz>")){
-                check_node(desNode);
-                check_node(load_next_node());
+                check_node(desNode); //<izraz>
+                load_next_node(); //D_ZAGRADA
+                check_node(load_next_node()); //<naredba>
             }
-
         }
 
         loopDepth--;
@@ -1519,6 +1519,7 @@ public class SemantickiAnalizator {
             MyIDN newIDN = new MyIDN();
             newIDN.name = lexWord;
             newIDN.type = type;
+            newIDN.l_expression = true; //TODO: proba radi 4.in
             manager.getLast().locaclVars.add(newIDN);
         }
 
