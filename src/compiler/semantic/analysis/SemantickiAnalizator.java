@@ -5,17 +5,18 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Scanner;
+import java.util.TreeSet;
 
 public class SemantickiAnalizator {
     private static Scanner sc;
     private static LinkedList<String> bufferRow = new LinkedList<>();
     private static LinkedList<Context> manager = new LinkedList<>();
+    private static TreeSet<String> declaredFunctions = new TreeSet<>();
     private static int loopDepth = 0;
 
 
-
     public static void main(String[] args) throws FileNotFoundException {
-        String path = "/home/vlado24/Downloads/PPJ_MultiSPRUT_2/Primjeri radnih direktorija/Sema/Testovi/4/4.in";
+        String path = "/home/vlado24/Downloads/PPJ_MultiSPRUT_2/Primjeri radnih direktorija/Sema/Testovi/7/7.in";
         sc = new Scanner(new File(path));
 
         Context globalContext = new Context();
@@ -23,9 +24,47 @@ public class SemantickiAnalizator {
         manager.add(globalContext);
         check_node(load_next_node());
 
+        //main exist
+        check_main(globalContext);
+
+
+        //all function
+        check_functions(globalContext);
     }
 
+
+
     //----------HELP FUNCTIONS---------
+    public static void check_main(Context globalContext){
+        boolean mainExist = false;
+
+        for (MyIDN func : globalContext.locaclVars){
+            if (func.type.equals("main(void->int)")){
+                mainExist = true;
+                break;
+            }
+        }
+
+        if (!mainExist) System.out.println("main");
+    }
+
+    private static void check_functions(Context globalContext) {
+        for (String declFunction: declaredFunctions) {
+            boolean exist = false;
+
+            for (MyIDN func: globalContext.locaclVars) {
+                if (declFunction.equals(func.type)){
+                    if (func.definedFunction){
+                        exist = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!exist) System.out.println("funkcija");
+        }
+    }
+
     public static ReturnParameters check_node(String function){
         function = function.substring(1, function.length()-1); //remove < & >
         ReturnParameters params = new ReturnParameters();
@@ -106,7 +145,7 @@ public class SemantickiAnalizator {
                 break;
 
             case "slozena_naredba":
-                params = slozena_naredba(null);
+                params = slozena_naredba(null, "");
                 break;
 
             case "lista_naredbi":
@@ -221,11 +260,8 @@ public class SemantickiAnalizator {
                     }
                 }
             } else if (testChar.length() == 1) {
-
-                if (Character.isLetter(testChar.charAt(0))
-                        || Character.isDigit(testChar.charAt(0))
-                        || testChar.charAt(0) == '"')
-                    return true;
+                int numericValue = (int) testChar.charAt(0);
+                if (numericValue >= 0 && numericValue <= 127) return true;
             }
         }
 
@@ -300,7 +336,7 @@ public class SemantickiAnalizator {
         return null;
     }
 
-    public static boolean isArrayCharInFuture(){
+    public static int isArrayCharInFuture(){
         if (!bufferRow.isEmpty()) System.err.println("ERROR: isArrayCharInFuture");
 
         String firstLine = sc.nextLine();
@@ -312,11 +348,15 @@ public class SemantickiAnalizator {
             String shortLine = line.replaceAll("^\\s+", "");
             bufferRow.addLast(shortLine);
 
-            if ((line.length()-shortLine.length()) < spaceLenght) return false;
-            else if (shortLine.startsWith("NIZ_ZNAKOVA")) return true;
+            if ((line.length()-shortLine.length()) < spaceLenght) return 0;
+            else if (shortLine.startsWith("NIZ_ZNAKOVA")){
+                String str = createErrorEndWord(shortLine);
+                str = str.substring(str.indexOf(",")+2, str.length()-2);
+                return str.length();
+            }
         }
 
-        return false;
+        return 0;
     }
 
     public static String arrayToString(ArrayList<String> array){
@@ -792,12 +832,14 @@ public class SemantickiAnalizator {
         return params;
     }
 
-    private static ReturnParameters slozena_naredba(ReturnParameters parameters) {
+    private static ReturnParameters slozena_naredba(ReturnParameters parameters, String returnType) {
         ReturnParameters params = new ReturnParameters();
 
         //add new context TODO: možda samo za jedan treba
         Context cnx = new Context();
         cnx.locaclVars = new ArrayList<>();
+
+        if (!returnType.equals("")) cnx.returnType = returnType;
 
         if (parameters != null){
             for (int i = 0; i < parameters.types.size(); i++){
@@ -964,10 +1006,16 @@ public class SemantickiAnalizator {
 
         if (firstEndWord.startsWith("KR_RETURN")){
             if (secondNode.startsWith("<izraz>")){
+
                 ReturnParameters retPar = check_node(secondNode);
+                String lastEndWord = createErrorEndWord(load_next_node()); //TOCKAZAREZ
                 String retTypeOfFunc = manager.getLast().returnType;
-                if (!retTypeOfFunc.equals(retPar.type) || !isImplicitCastable(retPar.type, retTypeOfFunc)){
+
+                if (!isImplicitCastable(retPar.type, retTypeOfFunc)){
                     //error
+                    System.out.println("<naredba_skoka> ::= " + firstEndWord + " <izraz> " + lastEndWord);
+                    System.err.println("Error: Wrong return type!");
+                    System.exit(-1);
                 }
 
             }else if (secondNode.startsWith("TOCKAZAREZ")){
@@ -975,12 +1023,18 @@ public class SemantickiAnalizator {
 
                 if (!manager.getLast().returnType.equals("void")){
                     //error
+                    System.out.println("<naredba_skoka> ::= " + firstEndWord + " " + secondEndWord);
+                    System.err.println("Error: return type must be void!");
+                    System.exit(-1);
                 }
             }
 
         }else {
             if (loopDepth < 1){
                 //error
+                System.out.println("<naredba_skoka> ::= " + firstEndWord + " " + createErrorEndWord(secondNode));
+                System.err.println("Error: Out of loop!");
+                System.exit(-1);
             }
         }
 
@@ -1046,9 +1100,26 @@ public class SemantickiAnalizator {
                 if (function.type.startsWith(idnName)){
                     if (function.definedFunction){
                         //error 3.
+                        idn = createErrorEndWord(idn);
+                        l_zagrada = createErrorEndWord(l_zagrada);
+                        desNode = createErrorEndWord(desNode);
+                        String lastEndWord = createErrorEndWord(load_next_node());
+                        String out = "<definicija_funkcije> ::= <ime_tipa> "+idn+" "+l_zagrada+" "+desNode+" "+lastEndWord+" <slozena_naredba>";
+                        System.out.println(out);
+                        System.err.println("Error: Function already defined!");
+                        System.exit(-1);
+
                     }else {
                         if (!function.type.equals(funcName)){
                             //Error 4.
+                            idn = createErrorEndWord(idn);
+                            l_zagrada = createErrorEndWord(l_zagrada);
+                            desNode = createErrorEndWord(desNode);
+                            String lastEndWord = createErrorEndWord(load_next_node());
+                            String out = "<definicija_funkcije> ::= <ime_tipa> "+idn+" "+l_zagrada+" "+desNode+" "+lastEndWord+" <slozena_naredba>";
+                            System.out.println(out);
+                            System.err.println("Error: Declaration wrong!");
+                            System.exit(-1);
                         }
 
                     }
@@ -1058,13 +1129,17 @@ public class SemantickiAnalizator {
             //5.
             MyIDN newIDN = new MyIDN();
             newIDN.type = funcName;
+            newIDN.name = idnName;
             newIDN.definedFunction = true;
             manager.getFirst().locaclVars.add(newIDN);
 
+            load_next_node();//D_ZAGRADA
+            load_next_node(); //slozena_naredba
+            slozena_naredba(null, retPar.type);
 
         }else if (desNode.startsWith("<lista_parametara>")){
             String funcName = createErrorEndWord(idn);
-            funcName = funcName.substring(0, funcName.indexOf("("));
+            funcName = funcName.substring(funcName.indexOf(",") + 1, funcName.length()-1);
             String idnName = funcName;
 
             //3.
@@ -1072,6 +1147,14 @@ public class SemantickiAnalizator {
                 if (function.type.startsWith(idnName)){
                     if (function.definedFunction){
                         //error 3.
+                        idn = createErrorEndWord(idn);
+                        l_zagrada = createErrorEndWord(l_zagrada);
+                        errorLoadNode(); //for <lista_parametara>
+                        String lastEndWord = createErrorEndWord(load_next_node());
+                        String out = "<definicija_funkcije> ::= <ime_tipa> "+idn+" "+l_zagrada+" <lista_parametara> "+lastEndWord+" <slozena_naredba>";
+                        System.out.println(out);
+                        System.err.println("Error: Function already defined!");
+                        System.exit(-1);
                     }
                 }
             }
@@ -1081,29 +1164,35 @@ public class SemantickiAnalizator {
 
             for (MyIDN function: manager.getFirst().locaclVars) {
                 if (function.type.startsWith(idnName)){
-                    if (!function.definedFunction){
-                        if (!function.type.equals(funcName)){
-                            //error
-                        }
+                    if (!function.type.equals(funcName)){
+                        //error
+                        idn = createErrorEndWord(idn);
+                        l_zagrada = createErrorEndWord(l_zagrada);
+                        String lastEndWord = createErrorEndWord(load_next_node());
+                        String out = "<definicija_funkcije> ::= <ime_tipa> "+idn+" "+l_zagrada+" <lista_parametara> "+lastEndWord+" <slozena_naredba>";
+                        System.out.println(out);
+                        System.err.println("Error: Wrong declaration!");
+                        System.exit(-1);
                     }
                 }
             }
 
             //5.
             MyIDN newIDN = new MyIDN();
-            newIDN.name = funcName;
+            newIDN.type = funcName;
+            newIDN.name = idnName;
             newIDN.definedFunction = true;
             manager.getFirst().locaclVars.add(newIDN);
 
-            slozena_naredba(retPar2);
+            load_next_node();//D_ZAGRADA
+            load_next_node(); //slozena_naredba
+            slozena_naredba(retPar2, retPar.type);
 
         }else{
             System.err.println("Error: definicija_funkcije");
             System.exit(-1);
         }
 
-        check_node(load_next_node());
-        //slozena_naredba("");
 
         return params;
     }
@@ -1198,6 +1287,7 @@ public class SemantickiAnalizator {
 
     private static void deklaracija() {
         ReturnParameters retPar = check_node(load_next_node());
+        load_next_node();
         lista_init_deklaratora(retPar.type);
         load_next_node(); //TOCKAZAREZ
     }
@@ -1234,11 +1324,13 @@ public class SemantickiAnalizator {
                     System.exit(-1);
                 }
 
+                String leftType = retParIzDecl.type.substring(6);
                 for (int i = 0; i <  retPar.types.size(); i++) {
-                    if (!isImplicitCastable(retPar.types.get(i), retParIzDecl.types.get(i)));{
+
+                    if (!isImplicitCastable(retPar.types.get(i), leftType)){
                         //error
                         System.out.println("<init_deklarator> ::= <izravni_deklarator> "+ firstEndWord+" <inicijalizator>");
-                        System.err.println("Error: types not castable! " + retPar.types.get(i) + "->" + retParIzDecl.types.get(i));
+                        System.err.println("Error: types not castable! " + retPar.types.get(i) + "->" + leftType);
                         System.exit(-1);
                     }
                 }
@@ -1286,24 +1378,34 @@ public class SemantickiAnalizator {
             //1.
             if (type.equals("void")){
                 //error
+                System.out.println("<izravni_deklarator> ::= "+firstEndWord+" "+secondEndWord+" "+thirdEndWord+" "+fourthEndWord);
+                System.err.println("Error: IDN can not be void!");
+                System.exit(-1);
+
             }
 
             //2.
             for (MyIDN idn : manager.getLast().locaclVars){
                 if (idn.name.equals(lexWord)){
                     //error
+                    System.out.println("<izravni_deklarator> ::= "+firstEndWord+" "+secondEndWord+" "+thirdEndWord+" "+fourthEndWord);
+                    System.err.println("Error: IDN already declared!");
+                    System.exit(-1);
                 }
             }
 
             //3.
             if (params.numOfElem < 1 || params.numOfElem > 1024){
                 //error
+                System.out.println("<izravni_deklarator> ::= "+firstEndWord+" "+secondEndWord+" "+thirdEndWord+" "+fourthEndWord);
+                System.err.println("Error: BROJ out of range! -> " + params.numOfElem);
+                System.exit(-1);
             }
 
             //4.
             MyIDN newIDN = new MyIDN();
             newIDN.name = lexWord;
-            newIDN.type = params.type;
+            newIDN.type = params.type; //TODO: mozda bez array
             manager.getLast().locaclVars.add(newIDN);
 
 
@@ -1311,16 +1413,24 @@ public class SemantickiAnalizator {
             String thirdNode = load_next_node();
 
             if (thirdNode.startsWith("KR_VOID")){
-                String fourthEndWord = createErrorEndWord(load_next_node());
+                String fourthEndWord = createErrorEndWord(load_next_node()); //D_ZAGRADA
                 String funcName = lexWord + "(void->" + type +")";
-                params.name = funcName;
+                declaredFunctions.add(funcName);
+                params.type = funcName;
+                params.name = lexWord;
                 boolean alreadyDeclared = false;
 
                 //1.
                 for (MyIDN func: manager.getLast().locaclVars) {
-                    if (func.name.startsWith(lexWord)){
-                        if (!func.name.equals(funcName)){
+                    if (func.type.startsWith(lexWord)){
+                        if (!func.type.equals(funcName)){
                             //error
+                            firstEndWord = createErrorEndWord(firstEndWord);
+                            String secondEndWord = createErrorEndWord(nextNode);
+                            String thirdEndWord = createErrorEndWord(thirdNode);
+                            System.out.println("<izravni_deklarator> ::= "+firstEndWord+" "+secondEndWord+" "+thirdEndWord+" "+fourthEndWord);
+                            System.err.println("Error: Wrong declaration!");
+                            System.exit(-1);
                         }else {
                             alreadyDeclared = true;
                             break;
@@ -1332,7 +1442,8 @@ public class SemantickiAnalizator {
                 //2.
                 if (!alreadyDeclared){
                     MyIDN newIDN = new MyIDN();
-                    newIDN.name = funcName;
+                    newIDN.type = funcName;
+                    newIDN.name = lexWord;
                     manager.getLast().locaclVars.add(newIDN);
                 }
 
@@ -1342,14 +1453,23 @@ public class SemantickiAnalizator {
 
 
                 String funcName = lexWord + "("+ arrayToString(retPar.types) +"->" + type +")";
-                params.name = funcName;
+                declaredFunctions.add(funcName);
+                params.type = funcName;
+                params.name = lexWord;
 
                 boolean alreadyDeclared = false;
                 //1.
                 for (MyIDN func: manager.getLast().locaclVars) {
-                    if (func.name.startsWith(lexWord)){
-                        if (!func.name.equals(funcName)){
+                    if (func.type.startsWith(lexWord)){
+                        if (!func.type.equals(funcName)){
                             //error
+                            firstEndWord = createErrorEndWord(firstEndWord);
+                            String secondEndWord = createErrorEndWord(nextNode);
+                            String thirdEndWord = createErrorEndWord(lastEndWord);
+                            System.out.println("<izravni_deklarator> ::= "+firstEndWord+" "+secondEndWord+" <lista_parametara> "+thirdEndWord);
+                            System.err.println("Error: Wrong declaration!");
+                            System.exit(-1);
+
                         }else {
                             alreadyDeclared = true;
                             break;
@@ -1360,13 +1480,16 @@ public class SemantickiAnalizator {
                 //2.
                 if (!alreadyDeclared){
                     MyIDN newIDN = new MyIDN();
-                    newIDN.name = funcName;
+                    newIDN.type = funcName;
+                    newIDN.name = lexWord;
                     manager.getLast().locaclVars.add(newIDN);
                 }
 
 
             }else {
                 //error
+                System.err.println("Error: izdravni_deklarator");
+                System.exit(-1);
             }
 
 
@@ -1409,11 +1532,15 @@ public class SemantickiAnalizator {
 
 
         if (firstNode.startsWith("<izraz_pridruzivanja>")){
-
-            if (isArrayCharInFuture()){
+            int arrayCharLength = isArrayCharInFuture();
+            if (arrayCharLength > 0){
                 ReturnParameters retPar = check_node(firstNode);
-                params.types = new ArrayList<>(retPar.types);
-                params.numOfElem = params.type.length(); //TODO: ovo tu je upitno malo dal ide +1
+                String toFill = retPar.type.startsWith("array ")? retPar.type.substring(6): retPar.type;
+
+                params.types = new ArrayList<>();
+                for (int i = 0; i < arrayCharLength; i++) params.types.add(toFill);
+
+                params.numOfElem = params.types.size(); //TODO: ovo tu je upitno malo dal ide +1
 
             }else {
                 ReturnParameters retPar = check_node(firstNode);
