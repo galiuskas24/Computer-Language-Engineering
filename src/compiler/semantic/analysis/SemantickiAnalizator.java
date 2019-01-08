@@ -16,8 +16,14 @@ public class SemantickiAnalizator {
 
 
     public static void main(String[] args) throws FileNotFoundException {
-        int type = 5;
-        String path = "/home/vlado24/Downloads/PPJ_MultiSPRUT_2/Primjeri radnih direktorija/Sema/Testovi/" + type + "/" + type +".proba";
+        int i = 658;
+
+        System.out.println("Test br. " + i);
+        String path = "/home/vlado24/Downloads/PPJ_MultiSPRUT_2/Primjeri radnih direktorija/Sema/Testovi/" + i + "/" + i +".in";
+        String pathTest = "/home/vlado24/Downloads/PPJ_MultiSPRUT_2/Primjeri radnih direktorija/Sema/Testovi/" + i + "/" + i +".out";
+
+        sc = new Scanner(new File(pathTest));
+        if (sc.hasNextLine()) System.out.println(sc.nextLine());
         sc = new Scanner(new File(path));
 
         Context globalContext = new Context();
@@ -31,11 +37,44 @@ public class SemantickiAnalizator {
 
         //all function
         check_functions(globalContext);
+
+
     }
 
 
 
     //----------HELP FUNCTIONS---------
+    public static String getFirstReturnParam(){
+
+        for (int i = manager.size()-1; i >= 0; i--) {
+            Context ctx = manager.get(i);
+            if (!ctx.returnType.equals("")){
+                return ctx.returnType;
+            }
+        }
+        return "";
+    }
+
+    public static boolean isExplicitCastable(String from, String to){
+        if (from.startsWith("const")
+            || from.startsWith("char")
+            || from.startsWith("int")){
+
+            //second variable
+            if (to.startsWith("const")
+                    || to.startsWith("char")
+                    || to.startsWith("int")){
+                return true;
+            }else {
+                return false;
+            }
+
+        }else {
+            return false;
+        }
+
+    }
+
     public static void check_main(Context globalContext){
         boolean mainExist = false;
 
@@ -46,7 +85,10 @@ public class SemantickiAnalizator {
             }
         }
 
-        if (!mainExist) System.out.println("main");
+        if (!mainExist){
+            System.out.println("main");
+            System.exit(-1);
+        }
     }
 
     private static void check_functions(Context globalContext) {
@@ -62,7 +104,10 @@ public class SemantickiAnalizator {
                 }
             }
 
-            if (!exist) System.out.println("funkcija");
+            if (!exist) {
+                System.out.println("funkcija");
+                System.exit(-1);
+            }
         }
     }
 
@@ -222,7 +267,6 @@ public class SemantickiAnalizator {
                 break;
             default:
                 ArrayList<Integer> aa = new ArrayList<>();
-                aa.get(1);
                 System.out.println("There is no function: " + function);
                 System.exit(1);
         }
@@ -353,11 +397,28 @@ public class SemantickiAnalizator {
             else if (shortLine.startsWith("NIZ_ZNAKOVA")){
                 String str = createErrorEndWord(shortLine);
                 str = str.substring(str.indexOf(",")+2, str.length()-2);
-                return str.length();
+
+                return calculateStringLength(str);
             }
         }
 
         return 0;
+    }
+
+    public static int calculateStringLength(String string){
+        boolean ignoreNext = false;
+        int counter = 0;
+        for (int i = 0; i < string.length(); i++){
+
+            if (ignoreNext){
+                ignoreNext = false;
+                continue;
+            }
+            counter++;
+            if (string.charAt(i) == '\\') ignoreNext = true;
+        }
+
+        return counter;
     }
 
     public static String arrayToString(ArrayList<String> array){
@@ -371,6 +432,12 @@ public class SemantickiAnalizator {
 
 
     public static void errorLoadNode(){
+
+        if (!bufferRow.isEmpty()){
+            int size = bufferRow.size();
+            for (int i = 0; i < (size-2); i++) bufferRow.removeFirst();
+        }
+
         String line = sc.nextLine();
         String node = line.replaceAll("^\\s+", "");
         int spacePrefix = line.length() - node.length();
@@ -378,7 +445,7 @@ public class SemantickiAnalizator {
         while (sc.hasNextLine()){
             String newLine = sc.nextLine();
             String nodeLine = newLine.replaceAll("^\\s+", "");
-            if ((newLine.length()-nodeLine.length()) <= spacePrefix){
+            if ((newLine.length()-nodeLine.length()) < spacePrefix){
                 bufferRow.add(nodeLine);
                 break;
             }
@@ -411,11 +478,13 @@ public class SemantickiAnalizator {
 
             case "BROJ":
                 params.type = "int";
+                if (lexWord.startsWith("0x")) lexWord = lexWord.substring(2);
 
+                while (lexWord.charAt(0) == '0' && (lexWord.length() > 2)) lexWord = lexWord.substring(1);
                 //1.
-                if (lexWord.length() < 10){
+                if (lexWord.length() < 11){
                     long lng = Long.parseLong(lexWord);
-                    if (lng <= 2147483648L && lng >= -2147483648L) break;
+                    if (lng < 2147483648L && lng > -2147483648L) break;
                 }
 
                 //error
@@ -552,22 +621,43 @@ public class SemantickiAnalizator {
 
                 }else if (thirdNode.startsWith("<lista_argumenata>")){
                     ReturnParameters retPar2 = check_node(thirdNode);
+                    boolean error = false;
 
-                    String func = retPar.type;
-                    params.type = func.substring(func.indexOf("->") + 2, func.length()-1);
-                    String parTypes = func.substring(func.indexOf("[") + 1, func.indexOf("]"));
-                    String[] parameters = parTypes.split(",");
+                    if (!retPar.type.contains("(")) error = true;
 
+                    if (!error){
+                        String func = retPar.type;
+                        params.type = func.substring(func.indexOf("->") + 2, func.length()-1);
 
-                    for (int i = 0; i < parameters.length; i++) {
-                        if (!isImplicitCastable(retPar2.types.get(i), parameters[i])){
-                            //error
-                            firstEndWord = createErrorEndWord(firstEndWord);
-                            String lastEndWord = createErrorEndWord(load_next_node());
-                            System.out.println("<postfiks_izraz> ::= <postfiks_izraz> "+firstEndWord+" <lista_argumenata> "+lastEndWord);
-                            System.err.println("Error: wrong types in lista_argumenata!");
-                            System.exit(-1);
+                        String parTypes;
+                        if (func.contains("[")){
+                            parTypes = func.substring(func.indexOf("[") + 1, func.indexOf("]"));
+                        }else{
+                            parTypes = func.substring(func.indexOf("(") + 1, func.indexOf("->"));
                         }
+
+                        String[] parameters = parTypes.split(",");
+
+
+                        if (parameters.length == retPar2.types.size()){
+                            for (int i = 0; i < parameters.length; i++) {
+                                if (!isImplicitCastable(retPar2.types.get(i), parameters[i])){
+                                    //error
+                                    error = true;
+                                    break;
+                                }
+                            }
+                        }else error = true;
+                    }
+
+
+                    if (error){
+                        //error
+                        firstEndWord = createErrorEndWord(firstEndWord);
+                        String lastEndWord = createErrorEndWord(load_next_node());
+                        System.out.println("<postfiks_izraz> ::= <postfiks_izraz> "+firstEndWord+" <lista_argumenata> "+lastEndWord);
+                        System.err.println("Error: wrong types in lista_argumenata!");
+                        System.exit(-1);
                     }
 
                     load_next_node(); //D_ZAGRADA
@@ -580,7 +670,7 @@ public class SemantickiAnalizator {
             }else if (firstEndWord.startsWith("OP_")){
                 params.type = "int";
 
-                if (!retPar.l_expression || !isImplicitCastable(retPar.type, "int")){
+                if (!retPar.l_expression || !isImplicitCastable(retPar.type, "int") || retPar.type.startsWith("const")){
                     System.out.println("<postfiks_izraz> ::= <postfiks_izraz> " + createErrorEndWord(firstEndWord));
                     System.err.println("Error: Nemogouce castati! -> " + retPar.type + " u INT");
                     System.exit(-1);
@@ -638,6 +728,7 @@ public class SemantickiAnalizator {
 
         }else if (firstNode.startsWith("<unarni_operator>")) {
             params.type = "int";
+            load_next_node(); // progutaj unarni operator
 
             ReturnParameters retPar = check_node(load_next_node());
             if (!isImplicitCastable(retPar.type, "int")){
@@ -673,8 +764,12 @@ public class SemantickiAnalizator {
             ReturnParameters retPar1 = check_node(load_next_node());
             String secondEndWord = createErrorEndWord(load_next_node()); //D_ZAGRADA
             ReturnParameters retPar2 = check_node(load_next_node());
-            //TODO: implementirat castanje retPar2 i retpar1
 
+            if (!isExplicitCastable(retPar2.type, retPar1.type)){
+                System.out.println("<cast_izraz> ::= "+createErrorEndWord(firstNode)+" <ime_tipa> "+secondEndWord+" <cast_izraz>");
+                System.err.println("Error: Cant explicit cast that!");
+                System.exit(-1);
+            }
 
             params.type = retPar1.type;
         }else {
@@ -789,7 +884,7 @@ public class SemantickiAnalizator {
             String endWord = createErrorEndWord(load_next_node());
             String secondNode = load_next_node();
 
-            if (!retPar.l_expression){
+            if (!retPar.l_expression || retPar.type.startsWith("const")){
                 System.out.println("<izraz_pridruzivanja> ::= <postfiks_izraz> " + endWord + " <izraz_pridruzivanja>");
                 System.err.println("Error: Mora biti pridruzivo!");
                 System.exit(-1);
@@ -847,6 +942,7 @@ public class SemantickiAnalizator {
                 MyIDN newIDN = new MyIDN();
                 newIDN.name = parameters.names.get(i);
                 newIDN.type = parameters.types.get(i);
+                newIDN.l_expression = true; //TODO upitno
                 cnx.locaclVars.add(newIDN);
             }
         }
@@ -1009,7 +1105,7 @@ public class SemantickiAnalizator {
 
                 ReturnParameters retPar = check_node(secondNode);
                 String lastEndWord = createErrorEndWord(load_next_node()); //TOCKAZAREZ
-                String retTypeOfFunc = manager.getLast().returnType;
+                String retTypeOfFunc = getFirstReturnParam();
 
                 if (!isImplicitCastable(retPar.type, retTypeOfFunc)){
                     //error
@@ -1020,8 +1116,9 @@ public class SemantickiAnalizator {
 
             }else if (secondNode.startsWith("TOCKAZAREZ")){
                 String secondEndWord = createErrorEndWord(secondNode);
+                String toTest = getFirstReturnParam();
 
-                if (!manager.getLast().returnType.equals("void")){
+                if (!toTest.equals("void")){
                     //error
                     System.out.println("<naredba_skoka> ::= " + firstEndWord + " " + secondEndWord);
                     System.err.println("Error: return type must be void!");
@@ -1097,7 +1194,9 @@ public class SemantickiAnalizator {
 
             //3.
             for (MyIDN function: manager.getFirst().locaclVars) {
-                if (function.type.startsWith(idnName)){
+                String functionType = function.type.contains("(") ? function.type.substring(0, function.type.indexOf("(")) : function.name;
+
+                if (functionType.equals(idnName)){
                     if (function.definedFunction){
                         //error 3.
                         idn = createErrorEndWord(idn);
@@ -1144,7 +1243,9 @@ public class SemantickiAnalizator {
 
             //3.
             for (MyIDN function: manager.getFirst().locaclVars) {
-                if (function.type.startsWith(idnName)){
+                String functionType = function.type.contains("(") ? function.type.substring(0, function.type.indexOf("(")) : function.type;
+
+                if (functionType.equals(idnName)){
                     if (function.definedFunction){
                         //error 3.
                         idn = createErrorEndWord(idn);
@@ -1163,7 +1264,9 @@ public class SemantickiAnalizator {
             funcName += "(" + arrayToString(retPar2.types) + "->" + retPar.type + ")";
 
             for (MyIDN function: manager.getFirst().locaclVars) {
-                if (function.type.startsWith(idnName)){
+                String functionType = function.type.contains("(") ? function.type.substring(0, function.type.indexOf("(")) : function.type;
+
+                if (functionType.equals(idnName)){
                     if (!function.type.equals(funcName)){
                         //error
                         idn = createErrorEndWord(idn);
@@ -1315,7 +1418,14 @@ public class SemantickiAnalizator {
             String firstEndWord = createErrorEndWord(nextNode); // OP_PRIDRUZI
             ReturnParameters retPar = check_node(load_next_node()); //<inicijalizator>
 
-            if (retParIzDecl.type.startsWith("array")){
+            if (retPar.types != null){
+
+                if (!retParIzDecl.type.startsWith("array")){
+                    //error
+                    System.out.println("<init_deklarator> ::= <izravni_deklarator> "+ firstEndWord+" <inicijalizator>");
+                    System.err.println("Error: Variable must be array!");
+                    System.exit(-1);
+                }
 
                 if (retPar.numOfElem > retParIzDecl.numOfElem){
                     //error
@@ -1335,7 +1445,22 @@ public class SemantickiAnalizator {
                     }
                 }
 
-            }else {
+            }else{
+
+                if (retPar.type.startsWith("array") && !retPar.type.contains("const")){
+                    System.out.println("<init_deklarator> ::= <izravni_deklarator> "+ firstEndWord+" <inicijalizator>");
+                    System.err.println("Error: right side can not be array without const! " + retPar.type + "->" + retParIzDecl.type);
+                    System.exit(-1);
+                }
+
+                if ((retPar.type.startsWith("array") && !retParIzDecl.type.startsWith("arrray"))
+                        ||(!retPar.type.startsWith("array") && retParIzDecl.type.startsWith("arrray"))){
+                    //error
+                    System.out.println("<init_deklarator> ::= <izravni_deklarator> "+ firstEndWord+" <inicijalizator>");
+                    System.err.println("Error: types not castable! " + retPar.type + "->" + retParIzDecl.type);
+                    System.exit(-1);
+                }
+
                 if (!isImplicitCastable(retPar.type, retParIzDecl.type)){
                     //error
                     System.out.println("<init_deklarator> ::= <izravni_deklarator> "+ firstEndWord+" <inicijalizator>");
@@ -1373,7 +1498,8 @@ public class SemantickiAnalizator {
 
             params.type = "array " + type;
             String num  =thirdEndWord.substring(thirdEndWord.indexOf(",") + 1, thirdEndWord.length()-1);
-            params.numOfElem = Integer.parseInt(num);
+            while (num.charAt(0) == '0' && (num.length() > 2)) num = num.substring(1);
+            params.numOfElem = num.length() > 4 ? -1 : Integer.parseInt(num);
 
             //1.
             if (type.equals("void")){
@@ -1422,7 +1548,9 @@ public class SemantickiAnalizator {
 
                 //1.
                 for (MyIDN func: manager.getLast().locaclVars) {
-                    if (func.type.startsWith(lexWord)){
+                    String functionType = func.type.contains("(") ? func.type.substring(0, func.type.indexOf("(")) : func.type;
+
+                    if (functionType.equals(lexWord)){
                         if (!func.type.equals(funcName)){
                             //error
                             firstEndWord = createErrorEndWord(firstEndWord);
@@ -1460,7 +1588,9 @@ public class SemantickiAnalizator {
                 boolean alreadyDeclared = false;
                 //1.
                 for (MyIDN func: manager.getLast().locaclVars) {
-                    if (func.type.startsWith(lexWord)){
+                    String functionType = func.type.contains("(") ? func.type.substring(0, func.type.indexOf("(")) : func.type;
+
+                    if (functionType.equals(lexWord)){
                         if (!func.type.equals(funcName)){
                             //error
                             firstEndWord = createErrorEndWord(firstEndWord);
@@ -1541,7 +1671,7 @@ public class SemantickiAnalizator {
                 params.types = new ArrayList<>();
                 for (int i = 0; i < arrayCharLength; i++) params.types.add(toFill);
 
-                params.numOfElem = params.types.size(); //TODO: ovo tu je upitno malo dal ide +1
+                params.numOfElem = params.types.size() + 1; //TODO: ovo tu je upitno malo dal ide +1
 
             }else {
                 ReturnParameters retPar = check_node(firstNode);
