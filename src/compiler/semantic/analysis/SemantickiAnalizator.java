@@ -16,7 +16,7 @@ public class SemantickiAnalizator {
 
 
     public static void main(String[] args) throws FileNotFoundException {
-        int i = 658;
+        int i = 712;
 
         System.out.println("Test br. " + i);
         String path = "/home/vlado24/Downloads/PPJ_MultiSPRUT_2/Primjeri radnih direktorija/Sema/Testovi/" + i + "/" + i +".in";
@@ -306,7 +306,7 @@ public class SemantickiAnalizator {
                 }
             } else if (testChar.length() == 1) {
                 int numericValue = (int) testChar.charAt(0);
-                if (numericValue >= 0 && numericValue <= 127) return true;
+                if ((numericValue >= 0 && numericValue <= 127) && numericValue != 92) return true;
             }
         }
 
