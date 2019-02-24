@@ -1,0 +1,12 @@
+c:\users\vlado\documents\visual studio 2017\Projects\PPJ_lab1\PPJ_lab1\bin\Debug\PPJ_lab1.exe.config
+c:\users\vlado\documents\visual studio 2017\Projects\PPJ_lab1\PPJ_lab1\bin\Debug\PPJ_lab1.exe
+c:\users\vlado\documents\visual studio 2017\Projects\PPJ_lab1\PPJ_lab1\bin\Debug\PPJ_lab1.pdb
+c:\users\vlado\documents\visual studio 2017\Projects\PPJ_lab1\PPJ_lab1\obj\Debug\PPJ_lab1.csprojResolveAssemblyReference.cache
+c:\users\vlado\documents\visual studio 2017\Projects\PPJ_lab1\PPJ_lab1\obj\Debug\PPJ_lab1.exe
+c:\users\vlado\documents\visual studio 2017\Projects\PPJ_lab1\PPJ_lab1\obj\Debug\PPJ_lab1.pdb
+C:\Users\Vlado\Desktop\Lab\PPJ_lab1\PPJ_lab1\obj\Debug\PPJ_lab1.csprojResolveAssemblyReference.cache
+C:\Users\Vlado\Desktop\Lab\PPJ_lab1\PPJ_lab1\obj\Debug\PPJ_lab1.exe
+C:\Users\Vlado\Desktop\Lab\PPJ_lab1\PPJ_lab1\obj\Debug\PPJ_lab1.pdb
+C:\Users\Vlado\Desktop\Lab\PPJ_lab1\PPJ_lab1\bin\Debug\PPJ_lab1.exe.config
+C:\Users\Vlado\Desktop\Lab\PPJ_lab1\PPJ_lab1\bin\Debug\PPJ_lab1.exe
+C:\Users\Vlado\Desktop\Lab\PPJ_lab1\PPJ_lab1\bin\Debug\PPJ_lab1.pdb
